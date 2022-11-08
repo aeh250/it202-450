@@ -1,3 +1,4 @@
+
 <?php
 function save_data($table, $data, $ignore = ["submit"])
 {

@@ -8,6 +8,7 @@ if (!is_logged_in()) {
 ?>
 
 
+
 <?php
 
 $results = [];
@@ -43,7 +44,7 @@ try {
             <?php foreach ($results as $role) : ?>
                 <tr>
                 <td><?php se($role, "user_id"); ?></td>
-                    <td><?php se($role, "total_cost"); ?></td>
+                    <td><?php se($role, "total_price"); ?></td>
                     <td><?php se($role, "address"); ?></td>
                     <td><?php se($role, "payment_method"); ?></td>
                     
@@ -64,7 +65,7 @@ try {
         <?php
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT id FROM OrderItems");
+$stmt = $db->prepare("SELECT id FROM OrdersTable");
 try {
     $stmt->execute();
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -137,6 +138,3 @@ try {
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
-
-        
-        <b><a href="<?php echo get_url('rate.php'); ?>" > Click here to give Feedback </a> </b>

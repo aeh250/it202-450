@@ -53,7 +53,7 @@ if (isset($_POST["save"])) {
     $confirm_password = se($_POST, "confirmPassword", null, false);
     if (!empty($current_password) && !empty($new_password) && !empty($confirm_password)) {
         $hasError = false;
-        if (!is_valid_password($new_password)) {
+        if (!is_valid_password($password)) {
             flash("Password too short", "danger");
             $hasError = true;
         }
@@ -93,31 +93,34 @@ if (isset($_POST["save"])) {
 $email = get_user_email();
 $username = get_username();
 ?>
-<form method="POST" onsubmit="return validate(this);">
-    <div class="mb-3">
-        <label for="email">Email</label>
-        <input type="email" name="email" id="email" value="<?php se($email); ?>" />
-    </div>
-    <div class="mb-3">
-        <label for="username">Username</label>
-        <input type="text" name="username" id="username" value="<?php se($username); ?>" />
-    </div>
-    <!-- DO NOT PRELOAD PASSWORD -->
-    <div>Password Reset</div>
-    <div class="mb-3">
-        <label for="cp">Current Password</label>
-        <input type="password" name="currentPassword" id="cp" />
-    </div>
-    <div class="mb-3">
-        <label for="np">New Password</label>
-        <input type="password" name="newPassword" id="np" />
-    </div>
-    <div class="mb-3">
-        <label for="conp">Confirm Password</label>
-        <input type="password" name="confirmPassword" id="conp" />
-    </div>
-    <input type="submit" value="Update Profile" name="save" />
-</form>
+<div class="container-fluid">
+    <h1>Profile</h1>
+    <form method="POST" onsubmit="return validate(this);">
+        <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <input class="form-control" type="email" name="email" id="email" value="<?php se($email); ?>" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="username">Username</label>
+            <input class="form-control" type="text" name="username" id="username" value="<?php se($username); ?>" />
+        </div>
+        <!-- DO NOT PRELOAD PASSWORD -->
+        <div class="mb-3">Password Reset</div>
+        <div class="mb-3">
+            <label class="form-label" for="cp">Current Password</label>
+            <input class="form-control" type="password" name="currentPassword" id="cp" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="np">New Password</label>
+            <input class="form-control" type="password" name="newPassword" id="np" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="conp">Confirm Password</label>
+            <input class="form-control" type="password" name="confirmPassword" id="conp" />
+        </div>
+        <input type="submit" class="mt-3 btn btn-primary" value="Update Profile" name="save" />
+    </form>
+</div>
 
 <script>
     function validate(form) {
@@ -125,10 +128,28 @@ $username = get_username();
         let con = form.confirmPassword.value;
         let isValid = true;
         //TODO add other client side validation....
-
+        const email = form.email.value;
+        const password = form.password.value;
+        if(email.indexOf("@") > -1){
+            if(!isValidEmail(email)){
+                flash("Invalid email", "danger");
+                isValid = false;
+            }
+        }
+        else{
+            if(!isValidUsername(email)){
+                flash("Username must be lowercase, 3-16 characters, and contain only a-z, 0-9, _ or - ","danger");
+                isValid = false;
+            }
+        }
+        if(!isValidPassword(password)){
+            flash("Password too short", "danger");
+            isValid = false;
+        }
+       return isValid;
         //example of using flash via javascript
         //find the flash container, create a new element, appendChild
-        if (isEqual(pw, con)) {
+        if (!isEqual(pw,con)) {
             flash("Password and Confrim password must match", "warning");
             isValid = false;
         }

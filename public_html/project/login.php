@@ -1,43 +1,47 @@
 <?php
 require(__DIR__ . "/../../partials/nav.php");
 ?>
-<form onsubmit="return validate(this)" method="POST">
-    <div>
-        <label for="email">Email/Username</label>
-        <input type="text" name="email" required />
-    </div>
-    <div>
-        <label for="pw">Password</label>
-        <input type="password" id="pw" name="password" required minlength="8" />
-    </div>
-    <input type="submit" value="Login" />
+<div class="container-fluid">
+    <h1>Login</h1>
+    <form onsubmit="return validate(this)" method="POST">
+        <div class="mb-3">
+            <label class="form-label" for="email">Username/Email</label>
+            <input class="form-control" type="text" id="email" name="email" required />
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="pw">Password</label>
+            <input class="form-control" type="password" id="pw" name="password" required minlength="8" />
+        </div>
+        <input type="submit" class="mt-3 btn btn-primary" value="Login" />
+    </form>
+</div>
 </form>
 <script>
     function validate(form) {
         //TODO 1: implement JavaScript validation
         //ensure it returns false for an error and true for success
+        //TODO update clientside validation to check if it should
+        //valid email or username
         let isValid = true;
         const email = form.email.value;
         const password = form.password.value;
-        if (email.indexOf("@") > -1){
-            if (isValidEmail(email)){
-                flash ("Invalid email", "Danger")
+        if(email.indexOf("@") > -1){
+            if(!isValidEmail(email)){
+                flash("Invalid email", "danger");
                 isValid = false;
             }
         }
         else{
-            if (!isValidUsername(email)){
-                flash("Username must be lowercase, 3-16 characters, and contain only a-z, 0-9, _ or -", "Danger");
+            if(!isValidUsername(email)){
+                flash("Username must be lowercase, 3-16 characters, and contain only a-z, 0-9, _ or - ","danger");
                 isValid = false;
             }
         }
-        if (!isValidPassword(password)) {
-            flash("Password too short", "Danger");
+        if(!isValidPassword(password)){
+            flash("Password too short", "danger");
             isValid = false;
         }
-        //TODO update clientside validation to check if it should
-        //valid email or username
-        return isValid;
+       return isValid;
     }
 </script>
 <?php
@@ -83,7 +87,8 @@ if (isset($_POST["email"]) && isset($_POST["password"])) {
         //flash("Welcome, $email");
         //TODO 4
         $db = getDB();
-        $stmt = $db->prepare("SELECT id, email, username, password from Users where email = :email or username = :email");
+        $stmt = $db->prepare("SELECT id, email, username, password from Users 
+        where email = :email or username = :email");
         try {
             $r = $stmt->execute([":email" => $email]);
             if ($r) {
