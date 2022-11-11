@@ -6,6 +6,13 @@ if (!isset($total_pages)) {
 if (!isset($page)) {
     $page = 1;
 }
+function persistQueryString($page)
+{
+    //set the query param for easily building
+    $_GET["page"] = $page;
+    //https://www.php.net/manual/en/function.http-build-query.php
+    return http_build_query($_GET);
+}
 ?>
 <nav aria-label="Generic Pagination">
     <ul class="pagination">
