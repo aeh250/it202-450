@@ -7,20 +7,20 @@ if (!is_logged_in()) {
 }
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT Cart.id, Cart.desired_quantity, Cart.product_id, Products.unit_price, Products.name, Products.description, Products.category, Products.stock, Cart.unit_cost FROM Products
-INNER JOIN Cart on Products.id = Cart.product_id 
+$stmt = $db->prepare("SELECT Cart.id,Cart.item_id, Cart.quantity, Products.unit_price, Products.name, Products.description, Products.category, Products.stock, Cart.unit_price FROM Products
+INNER JOIN Cart on Products.id = Cart.item_id 
 where Cart.user_id = :user_id"); // select prod it and name and inner join where prod id = cart.prod_id 
 //based on that id 
 $total_cart_value = 0;
 try {
-    $stmt->execute([":user_id" => get_user_id()]); //specify the user_id so I get only products in tat user's cart
+    $stmt->execute([":user_id" => get_user_id()]); //specify the user_id so I get only products in that user's cart
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $results = $r;
     if(count($results) > 0)
     {
         foreach($results as $result)
         {
-            $total_cart_value +=  (int) se($result, "desired_quantity", null, false) * floatval(se($result, "unit_cost", null, false));
+            $total_cart_value +=  (int) se($result, "quantity", null, false) * floatval(se($result, "unit_cost", null, false));
         }
     }
     //var_export(($results));
@@ -36,7 +36,7 @@ try {
         //you will the send the data to a php file in the api folder, which will insert it appropiately, and then
         //return a respnse back to this function and you will display a message here with the .message property of data
         //what should i pass into the purchase function? Can pass in other things such as, porduct_it, user_id, 
-        //desired_quentity to be 1, and cost.  Then I can update the quentity with the cost on Cart.php
+        //quentity to be 1, and cost.  Then I can update the quentity with the cost on Cart.php
 
         //cart.php will only diplay from the databse cart, and will have the view button too    
         let http = new XMLHttpRequest();
@@ -77,7 +77,7 @@ try {
         http.open("POST", "api/delete_cart.php", true);
         let data = {
                 id: cart_id,
-                desired_quantity: quantity
+                quantity: quantity
             }
         let q = Object.keys(data).map(key => key + '=' + data[key]).join('&');
         console.log(q);
@@ -102,7 +102,7 @@ try {
             flash("Invalid quantity", "warning");
         }
         else{
-        //make an ajax request - POST and in the api file update desired quantity as well as unit costof that item 
+        //make an ajax request - POST and in the api file update quantity as well as unit costof that item 
             let http = new XMLHttpRequest();
                 http.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
@@ -115,7 +115,7 @@ try {
             http.open("POST", "api/get_cart.php", true);
             let data = {
                     id: cart_id,
-                    desired_quantity: formFieldOne.value
+                    quantity: formFieldOne.value
                 }
             let q = Object.keys(data).map(key => key + '=' + data[key]).join('&');
             console.log(q);
@@ -154,13 +154,13 @@ try {
                             <?php endif; ?>
                         </div>
                         <div class="card-footer">
-                            Subtotal: $<?php echo ((int) se($item, "desired_quantity", null, false) * floatval(se($item, "unit_cost", null, false))); ?>
-                            <button onclick="remove_item('<?php se($item, 'id'); ?>', '<?php se($item, 'desired_quantity'); ?>')" class="btn btn-primary">Remove</button>
-                            <a class="btn btn-primary" href="product_details.php?id=<?php se($item, "product_id");?>">View</a>
+                            Subtotal: $<?php echo ((int) se($item, "quantity", null, false) * floatval(se($item, "unit_cost", null, false))); ?>
+                            <button onclick="remove_item('<?php se($item, 'id'); ?>', '<?php se($item, 'quantity'); ?>')" class="btn btn-primary">Remove</button>
+                            <a class="btn btn-primary" href="product_details.php?id=<?php se($item, "item_id");?>">View</a>
                             <form>
                                 <label for="quantity">Quantity:</label>
                         <div class="input-group">
-                                <input class="form-control" type="number" id="quantity" name="quantity" value="<?php se($item, 'desired_quantity'); ?>">
+                                <input class="form-control" type="number" id="quantity" name="quantity" value="<?php se($item, 'quantity'); ?>">
                                 <button type="button" onclick="set_quantity(this.form,'<?php se($item, 'id'); ?>')" class="btn btn-outline-primary">Set Quantity</button>
                         </div>
                             </form>
@@ -172,7 +172,7 @@ try {
                         return "<del>" + text + "</del>";
                     }
                     $(document.getElementById('cardwithID<?php echo $item["id"]; ?>').getElementsByClassName('card-body')[0]).click(function() {
-                        document.location.href = 'product_details.php?id=<?php echo $item["product_id"]; ?>';
+                        document.location.href = 'product_details.php?id=<?php echo $item["item_id"]; ?>';
                     });
                     // extract unit_cost and price from string that check if bot are not null and display 
                     var u_price = document.getElementById("cardwithID<?php echo $item["id"]; ?>").children[0].children[1].children[4];

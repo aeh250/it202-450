@@ -1,50 +1,26 @@
 <?php
 //note we need to go up 1 more directory
 require(__DIR__ . "/../../../partials/nav.php");
-
+$TABLE_NAME = "Products";
 if (!has_role("Admin")) {
     flash("You don't have permission to view this page", "warning");
-    require(__DIR__ . "/../home.php");
+    die(header("Location: $BASE_PATH/home.php"));
 }
 
 $results = [];
-$query = "";
-$params = [];
+
 if (isset($_POST["itemName"])) {
-    $itemName = se($_POST, "itemName", "", false);
-    $query = "SELECT id, name, description, stock, category, unit_price, visibility from Products WHERE name like :name";
-    $params[":name"] = "%" . $itemName . "%";
-}
-else if(isset($_POST["stockToCheck"]) && (!empty($_POST["stockToCheck"]) || $_POST["stockToCheck"] === "0"))
-{
-    $stockToCheck = se($_POST, "stockToCheck", "0", false);
-    $query = "SELECT id, name, description, stock, category, unit_price, visibility from Products WHERE stock <= :stockToCheck";
-    $params[":stockToCheck"] = $stockToCheck; 
-}
-if(!empty($query))
-{
     $db = getDB();
-    $total_query = str_replace("id, name, description, stock, category, unit_price, visibility","count(1) as total",$query);
-    $per_page = 10;
-    paginate($total_query, $params, $per_page); //$per_page defualts to 10 in the paginate function
-    if((int) $total_pages > 0)
-    {
-        $query .= " LIMIT :offset, :count";
-        $params[":offset"] = $offset;
-        $params[":count"] = $per_page;
-        $stmt = $db->prepare($query);
-        foreach ($params as $key => $value) {
-            $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $stmt->bindValue($key, $value, $type);
-        }
-        $params = null;
-        try {
-            $stmt->execute($params);
-            $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("SELECT id, name, description, stock, cost, image from $TABLE_NAME WHERE name like :name LIMIT 50");
+    try { 
+        $stmt->execute([":name" => "%" . $_POST["itemName"] . "%"]);
+        $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($r) {
             $results = $r;
-        } catch (PDOException $e) {
-                flash("<pre>" . var_export($e, true) . "</pre>");
         }
+    } catch (PDOException $e) {
+        error_log(var_export($e, true));
+        flash("Error fetching records", "danger");
     }
 }
 ?>
@@ -80,7 +56,7 @@ if(!empty($query))
                         <td><?php se($value, null, "N/A"); ?></td>
                     <?php endforeach; ?>
                     <td>
-                        <a class="btn btn-primary" href="edit_product.php?id=<?php se($record, "id"); ?>">Edit</a>
+                        <a class="btn btn-primary" href="edit_item.php?id=<?php se($record, "id"); ?>">Edit</a>
                     </td>
                 </tr>
             <?php endforeach; ?>

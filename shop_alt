@@ -3,7 +3,7 @@ require(__DIR__ . "/../../partials/nav.php");
 
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT id, name, description, category, unit_price, stock FROM Products WHERE visibility = 1 LIMIT 10"); // check if this the right query 
+$stmt = $db->prepare("SELECT id, name, description, cost, stock,category, WHERE stock > 0 LIMIT 20");
 try {
     $stmt->execute();
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -167,6 +167,7 @@ try {
                     <option value="created">Created</option>
                     <option value="avg_rateing">Rate</option>
                 </select>
+                <div class="input-group-text">Category</div>
                 <script>
                     //quick fix to ensure proper value is selected since
                     //value setting only works after the options are defined and php has the value set prior
@@ -240,18 +241,6 @@ try {
 
 <div class="container-fluid">
     <h1>Shop</h1>
-    <!-- TODO add filter -->
-    <form method="POST">
-        <label for="categories">Filter By Category:</label>
-        <br>
-        <div class="input-group">
-            <select class="form-select form-select-sm" name="categories" id="categories">
-                <!-- TODO add php templating here to get all the categories-->
-                <?php foreach ($categories as $category) : ?>
-                    <option value="<?php echo $category ?>"><?php echo $category ?></option>
-                <?php endforeach; ?>
-            </select>
-            <br>
     <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 g-4">
         <?php foreach ($results as $item) : ?>
             <div class="col">
@@ -260,7 +249,6 @@ try {
                         Products
                     </div>
                     
-
                     <div class="card-body">
                         <h5 class="card-title">Name: <?php se($item, "name"); ?></h5>
                         <p class="card-text">Description: <?php se($item, "description"); ?></p>
@@ -268,10 +256,15 @@ try {
                     </div>
                     <div class="card-footer">
                         Cost: <?php se($item, "cost"); ?>
-                        <button onclick="add_to_cart('<?php se($item, 'id'); ?>')" class="btn btn-primary">Add to Cart</button>
-                        <button><a href="preview_details.php?id=<?php se($item, "id"); ?>">View</a></button>
-                        <button><a href="rate.php?id=<?php se($item, "id"); ?>">Rate This Product</a></button>
+                        <form method="POST" action="cart.php">
+                            <input type="hidden" name="item_id" value="<?php se($item, "id");?>"/>
+                            <input type="hidden" name="action" value="add"/>
+                            <input type="number" name="desired_quantity" value="1" min="1" max="<?php se($item, "stock");?>"/>
+                            <input type="submit" class="btn btn-primary" value="Add to Cart"/>
+                            <button><a href="preview_details.php?id=<?php se($item, "id"); ?>">View</a></button>
+                            <button><a href="rate.php?id=<?php se($item, "id"); ?>">Rate This Product</a></button>
                         
+                        </form>
                     </div>
                 </div>
             </div>

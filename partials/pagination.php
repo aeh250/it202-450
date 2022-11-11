@@ -1,11 +1,19 @@
 <?php
 //safety checks to ensure "valid" data
+function persistQueryString($page)
+{
+    //set the query param for easily building
+    $_GET["page"] = $page;
+    //https://www.php.net/manual/en/function.http-build-query.php
+    return http_build_query($_GET);
+}
 if (!isset($total_pages)) {
     $total_pages = 1;
 }
 if (!isset($page)) {
     $page = 1;
 }
+
 ?>
 <nav aria-label="Generic Pagination">
     <ul class="pagination">
