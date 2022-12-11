@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS `OrderItems`(
     `id` int AUTO_INCREMENT PRIMARY KEY,
     `order_id` int,
     `product_id` int,
-    `quantity` int, 
+    `desired_quantity` int, 
     `unit_price` INT DEFAULT 999,
     `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `modified` TIMESTAMP DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,

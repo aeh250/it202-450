@@ -3,7 +3,7 @@ require(__DIR__ . "/../../partials/nav.php");
 
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT id, name, description, category, unit_price, stock FROM Products WHERE visibility = 1 LIMIT 10"); // check if this the right query 
+$stmt = $db->prepare("SELECT id, name, description, category, unit_price, stock FROM Products WHERE visibility = 1 LIMIT 20");
 try {
     $stmt->execute();
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -16,7 +16,7 @@ try {
 }
 ?>
 <script>
-      function purchase(item, cost) {
+      function purchase(item, unit_price) {
         console.log("TODO purchase item", item);
         let example = 1;
         if (example === 1) {
@@ -34,9 +34,9 @@ try {
             }
             http.open("POST", "api/add_to_cart.php", true);
             let data = {
-                item_id: item,
+                product_id: item,
                 quantity: 1,
-                cost: cost
+                unit_price: unit_price
             }
             let q = Object.keys(data).map(key => key + '=' + data[key]).join('&');
             console.log(q)
@@ -44,9 +44,9 @@ try {
             http.send(q);
         } else if (example === 2) {
             let data = new FormData();
-            data.append("item_id", item);
+            data.append("product_id", item);
             data.append("quantity", 1);
-            data.append("cost", cost);
+            data.append("unit_price", unit_price);
             fetch("api/add_to_cart.php", {
                     method: "POST",
                     headers: {
@@ -66,9 +66,9 @@ try {
                 });
         } else if (example === 3) {
             $.post("api/add_to_cart.php", {
-                    item_id: item,
+                    product_id: item,
                     quantity: 1,
-                    cost: cost
+                    unit_price: unit_price
                 }, (resp, status, xhr) => {
                     console.log(resp, status, xhr);
                     let data = JSON.parse(resp);
@@ -93,15 +93,15 @@ require_once(__DIR__ . "/../../partials/nav.php");
 $results = [];
 $db = getDB();
 //Sort and Filters
-$col = se($_GET, "col", "cost", false);
+$col = se($_GET, "col", "unit_price", false);
 //allowed list
-if (!in_array($col, ["cost", "stock", "name", "created"])) {
-    $col = "cost"; //default value, prevent sql injection
+if (!in_array($col, ["unit_price", "stock", "name", "created"])) {
+    $col = "unit_price"; //default value, prevent sql injection
 }
 $order = se($_GET, "order", "asc", false);
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT id, name, description, cost, stock, image FROM Products WHERE stock > 0 LIMIT 10");
+$stmt = $db->prepare("SELECT id, name, description, unit_price, stock, category FROM Products WHERE stock > 0 LIMIT 10");
 try {
     $stmt->execute();
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -119,8 +119,15 @@ if (!in_array($order, ["asc", "desc"])) {
 }
 $name = se($_GET, "name", "", false);
 
+$Category = se($_GET, "category", "laptop","ipad", false);
+if (!in_array($Category, ["laptop", "ipad"])) {
+    $Category = "laptop"; //default value, prevent sql injection
+}
+
+
+
 //split query into data and total
-$base_query = "SELECT id, name, description, cost, stock, image FROM Products";
+$base_query = "SELECT id, name, description, unit_price,category, stock FROM Products";
 $total_query = "SELECT count(1) as total FROM Products";
 //dynamic query
 $query = " WHERE 1=1"; //1=1 shortcut to conditionally build AND clauses
@@ -134,8 +141,18 @@ if (!empty($name)) {
 if (!empty($col) && !empty($order)) {
     $query .= " ORDER BY $col $order"; //be sure you trust these values, I validate via the in_array checks above
 }
-
-//get the total
+if(!empty($aRatingRange))
+{
+        $rateArr = explode(" ", $aRatingRange);
+        if(count($rateArr) >= 3)
+        {
+            $rate_1 = $rateArr[0];
+            $rate_2 = $rateArr[2];
+            array_push($whereQuery,"average_rating BETWEEN :rate_1 AND :rate_2");
+            $params[":rate_1"] = $rate_1;
+            $params[":rate_2"] = $rate_2;
+        }
+}//get the total
 
 $stmt = $db->prepare($total_query . $query);
 $total = 0;
@@ -161,7 +178,7 @@ try {
                 <div class="input-group-text">Sort</div>
                 <!-- make sure these match the in_array filter above-->
                 <select class="form-control" name="col" value="<?php se($col); ?>">
-                    <option value="cost">Cost</option>
+                    <option value="cost">cost</option>
                     <option value="stock">Stock</option>
                     <option value="name">Name</option>
                     <option value="created">Created</option>
@@ -175,6 +192,17 @@ try {
                 <select class="form-control" name="order" value="<?php se($order); ?>">
                     <option value="asc">Low</option>
                     <option value="desc">High</option>
+                </select>
+                <div class="input-group-text">Category</div>
+                <select  class="form-control" value="<?php se($Category); ?>">
+                <option value="laptop">laptop</option>
+                <option value="ipad">ipad</option>
+
+                <script>
+                    document.forms[0].category.value = "<?php se($Category); ?>";
+
+                </script>
+
                 </select>
                 <script>
                     //quick fix to ensure proper value is selected since
@@ -191,7 +219,7 @@ try {
     </form>
 <?php
 //paginate function
-$per_page = 3;
+$per_page = 5; //setup how many items on a page
 paginate($total_query . $query, $params, $per_page);
 //get the total
 /* this comment block has been replaced by paginate()
@@ -240,18 +268,6 @@ try {
 
 <div class="container-fluid">
     <h1>Shop</h1>
-    <!-- TODO add filter -->
-    <form method="POST">
-        <label for="categories">Filter By Category:</label>
-        <br>
-        <div class="input-group">
-            <select class="form-select form-select-sm" name="categories" id="categories">
-                <!-- TODO add php templating here to get all the categories-->
-                <?php foreach ($categories as $category) : ?>
-                    <option value="<?php echo $category ?>"><?php echo $category ?></option>
-                <?php endforeach; ?>
-            </select>
-            <br>
     <div class="row row-cols-1 row-cols-sm-1 row-cols-md-2 row-cols-lg-3 g-4">
         <?php foreach ($results as $item) : ?>
             <div class="col">
@@ -260,18 +276,22 @@ try {
                         Products
                     </div>
                     
-
                     <div class="card-body">
                         <h5 class="card-title">Name: <?php se($item, "name"); ?></h5>
                         <p class="card-text">Description: <?php se($item, "description"); ?></p>
                         <p class="card-text">Stock:  <?php se($item, "stock"); ?></p>
                     </div>
                     <div class="card-footer">
-                        Cost: <?php se($item, "cost"); ?>
-                        <button onclick="add_to_cart('<?php se($item, 'id'); ?>')" class="btn btn-primary">Add to Cart</button>
-                        <button><a href="preview_details.php?id=<?php se($item, "id"); ?>">View</a></button>
-                        <button><a href="rate.php?id=<?php se($item, "id"); ?>">Rate This Product</a></button>
+                    unit_price: <?php se($item, "unit_price"); ?>
+                        <form method="POST" action="cart.php">
+                            <input type="hidden" name="product_id" value="<?php se($item, "id");?>"/>
+                            <input type="hidden" name="action" value="add"/>
+                            <input type="number" name="desired_quantity" value="1" min="1"/>
+                            <input type="submit" class="btn btn-primary" value="Add to Cart"/>
+                            <button><a href="preview_details.php?id=<?php se($item, "id"); ?>">View</a></button>
+                            <button><a href="rate.php?id=<?php se($item, "id"); ?>">Rate This Product</a></button>
                         
+                        </form>
                     </div>
                 </div>
             </div>

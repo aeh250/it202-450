@@ -16,12 +16,12 @@ if (isset($_POST["submit"])) {
 //get the table definition
 $result = [];
 $columns = get_columns($TABLE_NAME);
-//echo "<pre>" . var_export($columns, true) . "</pre>";
+//echo "<pre>" 6. var_export($columns, true) . "</pre>";
 $ignore = ["id", "modified", "created"];
 $db = getDB();
 //get the item
 $id = se($_GET, "id", -1, false);
-$stmt = $db->prepare("SELECT * FROM $TABLE_NAME where id =:id");
+$stmt = $db->prepare("SELECT * FROM $TABLE_NAME where id =:id"); //I am getting everything from the table where id match the id
 try {
     $stmt->execute([":id" => $id]);
     $r = $stmt->fetch(PDO::FETCH_ASSOC);

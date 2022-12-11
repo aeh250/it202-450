@@ -69,6 +69,7 @@ session_start();
                         <ul class="dropdown-menu" aria-labelledby="rolesDropdown">
                             <li><a class="dropdown-item" href="<?php echo get_url('admin/add_item.php'); ?>">Create</a></li>
                             <li><a class="dropdown-item" href="<?php echo get_url('admin/list_items.php'); ?>">List</a></li>
+
                         </ul>
                     </li>
                 <?php endif; ?>

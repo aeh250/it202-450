@@ -9,12 +9,19 @@ require(__DIR__ . "/../../partials/nav.php");
         let flashElement = document.getElementById("flash");
         flashElement.innerHTML = "";
         const payment = form.elements[4].value;// this is the problem, need to get every form 
+        console.log(payment);
         const address = form.elements[5].value;
+        console.log(address);
         const apt = form.elements[6].value;
+        console.log(apt);
         const city = form.elements[7].value;
+        console.log(city);
         const state = form.elements[8].value;
+        console.log(state);
         const country = form.elements[9].value;
+        console.log(country)
         const zip = form.elements[10].value;
+        console.log(zip)
         
         //if the input is some wierd characters, or some number < 0, flash a message 
         let isValid = true;
@@ -67,7 +74,7 @@ require(__DIR__ . "/../../partials/nav.php");
                 let http = new XMLHttpRequest();
                     http.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-                        // document.getElementsByTagName("div")[1].innerHTML = data["message"];
+                        document.getElementsByTagName("div")[1].innerHTML = data["message"];
                         let data = JSON.parse(this.responseText);
                         console.log("response text", this.responseText);
                         if(data["message"] === "Cleared cart and purchase successfull")
@@ -120,9 +127,61 @@ require(__DIR__ . "/../../partials/nav.php");
         }
     }
 </script>
+<?php
+if (
+    isset($_POST["total_price"]) && isset($_POST["first_name"]) && isset($_POST["last_name"]) && isset($_POST["address"]) && isset($_POST["money_recieved"]) && isset($_POST["payment_method"])
+) {
+    $First_name = se($_POST, "first_name", "", false);
+    $Last_name = se($_POST, "last_name", "", false);
+    $Address = se($_POST, "address", "", false);
+    $Money_recieved = se($_POST, "money_recieved", "", false);
+    $Payment_method = se($_POST, "payment_method", "", false);
+    $Total_price = se($_POST,"total_price","", false);
+
+
+    $add = ("$First_name $Last_name,$Address,$Money_recieved,$Payment_method");
+    echo $add;
+   
+    
+
+    $hasError = false;
+    if (!$hasError) {
+        $db = getDB();
+        $stmt = $db->prepare("INSERT INTO Orders(user_id, total_price, address, payment_method, money_received) VALUE ( :user_id, :total_price, :address, :payment_method, money_recieved)");
+        try {
+            $stmt->execute([":user_id" => $user, ":total_price" => $Total_price,  ":address" => $Address, ":payment_method" => $Payment_method,  ":money_recieved" => $Money_recieved]);
+        } catch (PDOException $e) {
+            if ($e->errorInfo[1] === 1062) {
+                flash("Something is wrong, please try later", "warning");
+            } else {
+                flash(var_export($e->errorInfo, false), "danger");
+            }
+        }
+    }
+}
+?>
+<?php
+//note we need to go up 1 more directory
+
+$TABLE_NAME = "Orders";
+if (!has_role("Admin")) {
+    flash("You don't have permission to view this page", "warning");
+    die(header("Location: $BASE_PATH/home.php"));
+}
+if (isset($_POST["submit"])) {
+    $id = save_data($TABLE_NAME, $_POST);
+    if ($id > 1) {
+        flash("Created Item with id $id", "success");
+    }
+}
+//get the table definition
+$columns = get_columns($TABLE_NAME);
+//echo "<pre>" . var_export($columns, true) . "</pre>";
+$ignore = ["id", "modified", "created"];
+?>
 <div class="container-fluid">
 <h1>Payment Information</h1>
-<form method="POST">
+<form method="POST" onsubmit="return validate(this);">
   <p>Please select your method of payment:</p>
   <input type="radio" id="Cash" name="payment_method" value="Cash">
   <label for="Cash">Cash</label>
@@ -184,7 +243,5 @@ require(__DIR__ . "/../../partials/nav.php");
 <?php
 require(__DIR__ . "/../../partials/flash.php");
 ?>
-
-
 
 

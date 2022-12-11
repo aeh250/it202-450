@@ -9,11 +9,11 @@ if (!has_role("Admin")) {
 
 $results = [];
 
-if (isset($_POST["itemName"])) {
+if (isset($_POST["itemName"])) {//from itemName to name
     $db = getDB();
-    $stmt = $db->prepare("SELECT id, name, description, stock, cost, image from $TABLE_NAME WHERE name like :name LIMIT 50");
+    $stmt = $db->prepare("SELECT id, name, description, stock, category, unit_price, visibility from Products WHERE name like :name LIMIT 10");
     try { 
-        $stmt->execute([":name" => "%" . $_POST["itemName"] . "%"]);
+        $stmt->execute([":name" => "%" . $_POST["itemName"] . "%"]);// from itemName to name and i changed line 31 also under name=''
         $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if ($r) {
             $results = $r;
@@ -28,7 +28,7 @@ if (isset($_POST["itemName"])) {
     <h1>List Products</h1>
     <form method="POST" class="row row-cols-lg-auto g-3 align-items-center">
         <div class="input-group mb-3">
-            <input class="form-control" type="search" name="itemName" placeholder="Item Filter" />
+            <input class="form-control" type="search" name="itemName" placeholder="Item Filter" />  
             <input class="btn btn-primary" type="submit" value="Search"/>
         </div>
     </form>
