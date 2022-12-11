@@ -12,7 +12,7 @@ if (!is_logged_in()) {
 
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT user_id, total_price,address,payment_method FROM OrdersTable WHERE user_id = :uid");
+$stmt = $db->prepare("SELECT user_id, total_price,address,payment_method FROM Orders WHERE user_id = :uid");
 $user_id = get_user_id();
 $stmt->execute([":uid"=>$user_id]);
 try {

@@ -82,5 +82,5 @@ try {
 </div>
     <!-- migt have to do inner join Orders with orderItems to display order items for the logged in user-->
 <?php
-    require(__DIR__ . "/../../partials/flash.php");
+    require(__DIR__ . "/../../partials/footer.php");
 ?>

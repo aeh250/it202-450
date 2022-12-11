@@ -5,12 +5,11 @@ if (session_status() != PHP_SESSION_ACTIVE) {
     session_start();
 }
 $user_id = get_user_id();
-
 $response = ["status" => 400, "message" => "There was a problem completing your purchase"];
 http_response_code(400);
-if ($user_id > 1) {
+if ($user_id > 0) {
     $db = getDB();
-    $stmt = $db->prepare("SELECT name, c.id as item_id, quantity, cost, (cost*quantity) as subtotal FROM Cart c JOIN Products i on c.id = i.id WHERE c.user_id = :uid");
+    $stmt = $db->prepare("SELECT name, c.id as id ,product_id, desired_quantity, c.unit_price , (c.unit_price*desired_quantity) as subtotal FROM Cart c JOIN Products i on c.product_id = i.id WHERE c.user_id = :uid"); // changed item_id to product_id and changed cost to unit_price twice
     try {
         $stmt->execute([":uid" => $user_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -22,56 +21,57 @@ if ($user_id > 1) {
         if ($total_cost) {
             //can purchase
             $db->beginTransaction();
-            $stmt = $db->prepare("SELECT max(order_id) as order_id FROM OrderHistory");
-            $next_order_id = 0;
+            $query = "INSERT INTO Orders (user_id, total_price, payment_method, address, money_recived, first_name, last_name VALUES(:user_id, :total_price, :payment_method, :address, :money_recieved, :first_name, :last_name)";//hrere
+            $stmt = $db->prepare($query);
             //get next order id
             try {
-                $stmt->execute();
-                $r = $stmt->fetch(PDO::FETCH_ASSOC);
-                $next_order_id = (int)se($r, "order_id", 0, false);
-                $next_order_id++;
+                //
+                $stmt->execute([":uid" => $user_id]);
+                $stmt->execute([":uid" => $user_id, ":total_price" => $total_price, ":payment_method" => $payment_method,":adress" => $address,":first_name" => $first_name, ":last_name" => $last_name]);
+                $next_order_id= $db->lastInsertId();
             } catch (PDOException $e) {
                 error_log("Error fetching order_id: " . var_export($e));
                 $db->rollback();
             }
-            //deduct product stock (used to determine if out of stock as it'll fail with a constraint violation)
+            //deduct product stock
             if ($next_order_id > 0) {
                 $stmt = $db->prepare("UPDATE Products
-                set stock = stock - (select IFNULL(quantity, 0) FROM Cart WHERE item_id = Products.id and user_id = :uid) 
-                WHERE id in (SELECT item_id from Cart where user_id = :uid)");
+                set stock = stock - (select IFNULL(desired_quantity, 0) FROM Cart WHERE product_id = Products.id and user_id = :uid) 
+                WHERE id in (SELECT product_id from Cart where user_id = :uid)");
                 try {
                     $stmt->execute([":uid" => $user_id]);
+                    //$stmt->execute([":uid" => $user_id, ":total_price" => $total_price, ":payment_method" => $payment_method,":adress" => $address,":first_name" => $first_name, ":last_name" => $last_name]);
                 } catch (PDOException $e) {
                     error_log("Update stock error: " . var_export($e, true));
                     $response["message"] = "At least one of your items is low on stock and is unable to be purchased";
                     $db->rollback();
-                    $next_order_id = 0; //using as a controller
+                    $next_order_id = 0; 
                 }
             }
-            //map cart to order history
+            //get cart to order history
             if ($next_order_id > 0) {
-                $stmt = $db->prepare("INSERT INTO OrderHistory (item_id, user_id, quantity, cost, order_id) 
-                SELECT item_id, user_id, Cart.quantity, cost, :order_id FROM Cart JOIN Products on Cart.item_id = Products.id
+                $stmt = $db->prepare("INSERT INTO OrderHistory (order_id, product_id, desired_quantity,user_id, unit_price) 
+                SELECT :order_id, product_id, Cart.desired_quantity,user_id, Cart.unit_price FROM Cart JOIN Products on Cart.product_id = Products.id
                  WHERE user_id = :uid");
                 try {
                     $stmt->execute([":uid" => $user_id, ":order_id" => $next_order_id]);
                 } catch (PDOException $e) {
                     error_log("Error mapping cart data to order history: " . var_export($e, true));
                     $db->rollback();
-                    $next_order_id = 0; //using as a controller
+                    $next_order_id = 0; 
                 }
             }
             //update inventory
             if ($next_order_id > 0) {
-                $stmt = $db->prepare("INSERT INTO OrderItems (item_id, quantity, user_id)
-                SELECT item_id, quantity, user_id FROM Cart WHERE user_id = :uid
-                ON DUPLICATE KEY UPDATE OrderItems.quantity = OrderItems.quantity + OrderItems.quantity");
+                $stmt = $db->prepare("INSERT INTO OrderItems (product_id, desired_quantity, user_id)
+                SELECT product_id, desired_quantity, user_id FROM Cart WHERE user_id = :uid
+                ON DUPLICATE KEY UPDATE OrderItems.desired_quantity = OrderItems.desired_quantity + OrderItems.desired_quantity");
                 try {
                     $stmt->execute([":uid" => $user_id]);
                 } catch (PDOException $e) {
                     error_log("Error updating user's inventory: " . var_export($e, true));
                     $db->rollback();
-                    $next_order_id = 0; // using as a controller
+                    $next_order_id = 0; 
                 }
             }
             //clear the user's cart now that the process is done
@@ -82,7 +82,7 @@ if ($user_id > 1) {
                 } catch (PDOException $e) {
                     error_log("Error deleting cart: " . var_export($e, true));
                     $db->rollback();
-                    $next_order_id = 0; // using as a controller
+                    $next_order_id = 0; 
                 }
             }
             if ($next_order_id) {

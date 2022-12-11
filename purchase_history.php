@@ -8,12 +8,11 @@ if (!is_logged_in()) {
 ?>
 
 
-
 <?php
 
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT user_id, total_price ,address, payment_method FROM Orders WHERE user_id = :uid"); //changed the OrdersTable to OrdersItems
+$stmt = $db->prepare("SELECT user_id, total_price,address,payment_method FROM Orders WHERE user_id = :uid");
 $user_id = get_user_id();
 $stmt->execute([":uid"=>$user_id]);
 try {
@@ -44,7 +43,7 @@ try {
             <?php foreach ($results as $role) : ?>
                 <tr>
                 <td><?php se($role, "user_id"); ?></td>
-                    <td><?php se($role, "total_price"); ?></td>
+                    <td><?php se($role, "total_cost"); ?></td>
                     <td><?php se($role, "address"); ?></td>
                     <td><?php se($role, "payment_method"); ?></td>
                     
@@ -65,7 +64,7 @@ try {
         <?php
 $results = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT id FROM OrdersTable");
+$stmt = $db->prepare("SELECT id FROM OrderItems");
 try {
     $stmt->execute();
     $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -87,13 +86,18 @@ try {
                     </div>
                     <?php endforeach; ?>
                     </div>
-  
 
+    <?php
+    
+    $n = se ($item, "id","",false)-1;
+
+    
+    ?>
 
 <?php
 $rrr = [];
 $db = getDB();
-$stmt = $db->prepare("SELECT order_id , item_id , quantity FROM OrderItems WHERE order_id "); //I check the orderItems and everything is their
+$stmt = $db->prepare("SELECT order_id , product_id , desired_quantity FROM OrderItems WHERE order_id = $n  ");
 try {
     $stmt->execute();
     $rr = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -133,3 +137,6 @@ try {
                 </tr>
             <?php endforeach; ?>
         <?php endif; ?>
+
+        
+        <b><a href="<?php echo get_url('rate.php'); ?>" > Click here to give Feedback </a> </b>

@@ -14,7 +14,7 @@ if (isset($_POST["submit"])) {
 $result = [];
 $columns = get_columns($TABLE_NAME);
 //echo "<pre>" . var_export($columns, true) . "</pre>";
-$ignore = [ "item_id", "category", "quantity" ];
+$ignore = [ "item_id", "category", "desired_quantity" ];
 $db = getDB();
 //get the item
 $id = se($_GET, "id", 1, false);
@@ -53,7 +53,7 @@ function map_column($col)
         <?php se($result, "name"); ?>
         <?php se($result, "description"); ?>
         <?php se($result, "category"); ?>
-        Cost of the product $<?php se($result, "cost"); ?>
+        Cost of the product $<?php se($result, "unit_price"); ?>
 
 
     </div>
@@ -180,3 +180,16 @@ function setRating(){
     </script>
 </body>
 </html>
+
+if(!empty($aRatingRange))
+{
+        $rateArr = explode(" ", $aRatingRange);
+        if(count($rateArr) >= 3)
+        {
+            $rate_1 = $rateArr[0];
+            $rate_2 = $rateArr[2];
+            array_push($whereQuery,"average_rating BETWEEN :rate_1 AND :rate_2");
+            $params[":rate_1"] = $rate_1;
+            $params[":rate_2"] = $rate_2;
+        }
+}
