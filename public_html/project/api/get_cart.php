@@ -10,7 +10,7 @@ $response = ["status" => 400, "message" => "Unhandled error"];
 http_response_code(400);
 if ($user_id > 0) {
     $db = getDB();
-    $stmt = $db->prepare("SELECT name, c.id as id ,item_id, quantity, cost, (cost*quantity) as subtotal FROM Cart c JOIN Products i on c.item_id = i.id WHERE c.user_id = :uid");
+    $stmt = $db->prepare("SELECT name, c.id as id ,product_id, desired_quantity, c.unit_price , (c.unit_price*desired_quantity) as subtotal FROM Cart c JOIN Products i on c.product_id = i.id WHERE c.user_id = :uid"); // changed item_id to product_id and changed cost to unit_price twice
     try {
         $stmt->execute([":uid" => $user_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

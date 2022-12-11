@@ -1,0 +1,65 @@
+<?php
+require_once(__DIR__ . "/../../partials/nav.php");
+
+if (!is_logged_in()) {
+    flash  ("You must have to login to see your cart");
+    die(header("Location: login.php"));
+}
+?>
+
+
+
+<?php
+
+$results = [];
+$db = getDB();
+$stmt = $db->prepare("SELECT id, total_price ,address, payment_method FROM Orders WHERE user_id = :uid"); //changed the OrdersTable to OrdersItems
+$user_id = get_user_id();
+$stmt->execute([":uid"=>$user_id]);
+try {
+    $stmt->execute();
+    $r = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($r) {
+        $results = $r;
+    }
+} catch (PDOException $e) {
+    flash("<pre>" . var_export($e, true) . "</pre>");
+}
+?>
+<table>
+    <thead>
+        <th >Order ID &emsp;</th>
+        <th>Total Cost&emsp;</th>
+        <th> Shipping Address&emsp;</th>
+        <th>Payment Method &emsp;</th>
+       
+        
+</thead>
+<tbody>
+<?php if (empty($results)) : ?>
+            <tr>
+                <td colspan="100%"><br>&emsp;&emsp;&emsp;&emsp;Sorry No item found</td>
+            </tr>
+        <?php else : ?>
+            <?php foreach ($results as $role) : ?>
+                <tr>
+                       
+                <td><?php se($role, "id"); ?></td>
+                    <td><?php se($role, "total_price"); ?></td>
+                    <td><?php se($role, "address"); ?></td>
+                    <td><?php se($role, "payment_method"); ?></td>
+                    
+            <td>
+            <a class="btn btn-primary" href="orders_details.php?order_id=<?php se($role, "id");?>">View</a>
+
+            </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+
+
+
+        <?php
+require(__DIR__ . "/../../partials/footer.php");
+?>
