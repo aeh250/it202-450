@@ -1,0 +1,247 @@
+<?php
+require(__DIR__ . "/../../partials/nav.php"); 
+//I assert here that total_cost > $000.00
+?>
+<script>
+    function purchase(form, u_id, total) {
+        console.log("TODO purchase", form);
+        //chec if all fields are filled in and if they are, then
+        let flashElement = document.getElementById("flash");
+        flashElement.innerHTML = "";
+        const payment = form.elements[4].value;// this is the problem, need to get every form 
+        console.log(payment);
+        const address = form.elements[5].value;
+        console.log(address);
+        const apt = form.elements[6].value;
+        console.log(apt);
+        const city = form.elements[7].value;
+        console.log(city);
+        const state = form.elements[8].value;
+        console.log(state);
+        const country = form.elements[9].value;
+        console.log(country)
+        const zip = form.elements[10].value;
+        console.log(zip)
+        
+        //if the input is some wierd characters, or some number < 0, flash a message 
+        let isValid = true;
+        let payment_method = "";
+        if(!(form.elements[0].checked || form.elements[1].checked || form.elements[2].checked || form.elements[3].checked))
+        {
+            isValid = false;
+            flash("Need to select a method of payment", "danger");
+        }
+        else
+        {
+            payment_method = document.querySelector("input[type=radio][name=payment_method]:checked").value;
+        }
+        if(payment.length > 0 && address.length > 0 && city.length > 0 && state.length > 0 && country.length > 0 && zip.length > 0)
+        {
+            //send ajax request with other things packed apt/suite is optional 
+            //compare the payment with total_cart here; pass in cart total into this function
+            if(!(/^(\d*\.)?\d+$/.test(payment)))
+            {
+                flash("Invalid payment amount entered","warning");
+                isValid = false;
+            }
+            if(!(/\d+[ ](?:[A-Za-z0-9.-]+[ ]?)+/.test(address)))
+            {
+                flash("address is invalid","warning");
+                isValid = false;
+            }
+            if(!(/^[A-Za-z]+$/.test(city)))
+            {
+                flash("city is invalid","warning");
+                isValid = false;
+            }
+            if(!(/^[A-Za-z ]+$/.test(state)))
+            {
+                flash("state is invalid","warning");
+                isValid = false;
+            }
+            if(!(/^[A-Za-z ]+$/.test(country)))
+            {
+                flash("country is invalid","warning");
+                isValid = false;
+            }
+            if(!(/\d{5}([ \-]\d{4})?/.test(zip)))
+            {
+                flash("zip/postal code is invalid","warning");
+                isValid = false;
+            }
+            if(isValid)
+            {
+                let http = new XMLHttpRequest();
+                    http.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementsByTagName("div")[1].innerHTML = data["message"];
+                        let data = JSON.parse(this.responseText);
+                        console.log("response text", this.responseText);
+                        if(data["message"] === "Cleared cart and purchase successfull")
+                        {
+                            flash(data["message"], "success");
+                            setTimeout(function(){ window.location.href = "confirmation_page.php?last_inserted_orderId=" + data["last_inserted_orderId"]; }, 3000);
+                        }
+                        else
+                        {
+                            flash(data["message"], "warning");
+                        }
+                        // return a sucsess message and redirect the user 
+                    }
+                };
+                http.open("POST", "api/purchase_cart.php", true); 
+                let data = {
+                        total_price : payment, 
+                        money_recieved : money_recieved,
+                        first_name : first_name,
+                        last_name: last_name,
+                        address : address + " " + apt + " " + city + " " + state + " " + country + " " + zip,
+                        payment_method : payment_method
+                    }
+                let q = Object.keys(data).map(key => key + '=' + data[key]).join('&');
+                console.log(q);
+                http.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                http.send(q);
+            }
+            //console.log(http);
+        }
+        else{
+            if(payment.length <= 0){
+                flash("Payment cannot be empty","warning");
+            }
+            if(address.length <= 0){
+                flash("Need to provide street address","warning");
+            }
+            if(city.length <= 0){
+                flash("Need to provide city","warning");
+            }
+            if(state.length <= 0){
+                flash("Need to provide state","warning");
+            }
+            if(country.length <= 0){
+                flash("Need to provide country","warning");
+            }
+            if(zip.length <= 0){
+                flash("Need to provide zip/postal code","warning");
+            }
+        }
+    }
+</script>
+<?php
+if (
+    isset($_POST["total_price"]) && isset($_POST["first_name"]) && isset($_POST["last_name"]) && isset($_POST["address"]) && isset($_POST["money_recieved"]) && isset($_POST["payment_method"])
+) {
+    $First_name = se($_POST, "first_name", "", false);
+    $Last_name = se($_POST, "last_name", "", false);
+    $Address = se($_POST, "address", "", false);
+    $Money_recieved = se($_POST, "money_recieved", "", false);
+    $Payment_method = se($_POST, "payment_method", "", false);
+    $Total_price = se($_POST,"total_price","", false);
+
+
+    $add = ("$First_name $Last_name,$Address,$Money_recieved,$Payment_method");
+    echo $add;
+   
+    
+
+    $hasError = false;
+    if (!$hasError) {
+        $db = getDB();
+        $stmt = $db->prepare("INSERT INTO Orders(user_id, total_price, address, payment_method, money_received) VALUE ( :user_id, :total_price, :address, :payment_method, money_recieved)");
+        try {
+            $stmt->execute([":user_id" => $user, ":total_price" => $Total_price,  ":address" => $Address, ":payment_method" => $Payment_method,  ":money_recieved" => $Money_recieved]);
+        } catch (PDOException $e) {
+            if ($e->errorInfo[1] === 1062) {
+                flash("Something is wrong, please try later", "warning");
+            } else {
+                flash(var_export($e->errorInfo, false), "danger");
+            }
+        }
+    }
+}
+?>
+<?php
+//note we need to go up 1 more directory
+
+$TABLE_NAME = "Orders";
+if (!has_role("Admin")) {
+    flash("You don't have permission to view this page", "warning");
+    die(header("Location: $BASE_PATH/home.php"));
+}
+if (isset($_POST["submit"])) {
+    $id = save_data($TABLE_NAME, $_POST);
+    if ($id > 1) {
+        flash("Created Item with id $id", "success");
+    }
+}
+//get the table definition
+$columns = get_columns($TABLE_NAME);
+//echo "<pre>" . var_export($columns, true) . "</pre>";
+$ignore = ["id", "modified", "created"];
+?>
+<div class="container-fluid">
+<h1>Payment Information</h1>
+<form method="POST" onsubmit="return validate(this);">
+  <p>Please select your method of payment:</p>
+  <input type="radio" id="Cash" name="payment_method" value="Cash">
+  <label for="Cash">Cash</label>
+  <input type="radio" id="Visa" name="payment_method" value="Visa">
+  <label for="Visa">Visa</label>
+  <input type="radio" id="Mastercard" name="payment_method" value="MasterCard">
+  <label for="MasterCard">MasterCard</label>
+  <input type="radio" id="Amex" name="payment_method" value="Amex">
+  <label for="Amex">Amex</label>
+    <div class="mb-3">
+        <label for="total_price">Payment</label>
+        <input type="text" class="form-control form-control-sm" name="total_price" value="<?php se($_SESSION, "total_cost", "", true); ?>"/>
+    </div>
+<h1>Shipping Information</h1>
+    <div class="mb-3">
+        <label for="first_name">First Name</label>
+        <input type="text" id="first_name" class="form-control form-control-sm" name="first_name"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <div class="mb-3">
+        <label for="last_name">Last Name</label>
+        <input type="text" id="last_name" class="form-control form-control-sm" name="last_name"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <div class="mb-3">
+        <label for="address">Street Address</label>
+        <input type="text" id="address" class="form-control form-control-sm" name="address"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <div class="mb-3">
+        <label for="apt_num">Apartment, suite, etc.</label>
+        <input type="text" id="apt_num" class="form-control form-control-sm" name="apt_num"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <div class="mb-3">
+        <label for="city">City</label>
+        <input type="text" id="city" class="form-control form-control-sm" name="city"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <div class="mb-3">
+    <label for="states">State</label>
+    <br>
+    <select class="form-select form-select-sm" name="states" id="states">
+         <!-- TODO add php templating here to get all the categories-->
+        <option value="New Jersey">New Jersey</option>
+        <option value="New York">New York</option>
+    </select>
+    </div>
+    <div class="mb-3">
+    <label for="countries">Country</label>
+    <br>
+    <select class="form-select form-select-sm" name="countries" id="countries">
+         <!-- TODO add php templating here to get all the categories-->
+        <option value="United States of America">United States of America</option>
+    </select>
+    </div>
+    <div class="mb-3">
+        <label for="zip">ZIP/Postal Code</label>
+        <input type="text" id="zip" class="form-control form-control-sm" name="zip"/> <!-- rmoved minlength attr, and required attr to see php error messages-->
+    </div>
+    <button type="button" onclick="purchase(this.form, '<?php echo get_user_id(); ?>', '<?php se($_SESSION, 'total_cost', '', true); ?>')" class="btn btn-primary">Place Order</button>
+</form>
+</div>
+<?php
+require(__DIR__ . "/../../partials/flash.php");
+?>
+
+
