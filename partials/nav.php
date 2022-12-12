@@ -71,7 +71,9 @@ session_start();
                             <li><a class="dropdown-item" href="<?php echo get_url('admin/list_items.php'); ?>">List</a></li>
 
                         </ul>
+                        
                     </li>
+                    <li class="nav-item"><a class="nav-link" href="<?php echo get_url('admin/list_purchase_history.php'); ?>">View History</a> </li>
                 <?php endif; ?>
                 <?php if (is_logged_in()) : ?>
                     <li class="nav-item"><a class="nav-link" href="<?php echo get_url('logout.php'); ?>">Logout</a></li>
